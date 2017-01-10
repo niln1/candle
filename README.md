@@ -1,26 +1,22 @@
 Candlestick Graph
 ==================
 
-A small library for displaying OANDA's rate history data in a candlestick chart with a line chart control that allows filtering the candlesticks.
+A small library for displaying TWTR's rate history data in a candlestick chart with a line chart control that allows filtering the candlesticks.
 
 ##Browser Compatibility
 This library has only been testing in Google Chrome v28+.
 
-##Setup
-Edit demo.html, and set Auth Token and Account ID.
-
 ###JavaScript Dependencies
-Before including the `OCandlestickChart` file, both oandajs and Google's JavaScript API have to be loaded.
+Before including the `CandlestickChart` file, Google's JavaScript API have to be loaded.
 
 ```HTML
-<script src="https://rawgithub.com/mrpoulin/oandajs/update/oanda.js"></script>
 <script src="https://www.google.com/jsapi"></script>
 ```
 
 Then you can include the library file:
 
 ```HTML
-<script src="./OCandlestickChart.js"></script>
+<script src="./CandlestickChart.js"></script>
 ```
 
 ###Initialization
@@ -33,8 +29,6 @@ Google requires that it's API be initialized before using any functions. You mus
 ```
 
 **Note:** The unstable version (1.1) of both modules is required to stop candlesticks from being cut off at the edges of the graph.
-
-You can also configure oandajs to add a auth token or change the API endpoint URL:
 
 ```HTML
 <script>
@@ -138,7 +132,7 @@ FIX: Load version 1.1 (unstable) of the visualization library.
 ##License
 The MIT License (MIT)
 
-Copyright (c) 2013 OANDA Corporation
+Copyright (c) 2016 NilN1
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 
