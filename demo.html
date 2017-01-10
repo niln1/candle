@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+
+<html lang="en">
+    <head>
+        <title>Simple rates graph</title>
+        <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+        <script src="http://developer.oanda.com/oandajs/oanda.js"></script>
+        <script src="https://www.google.com/jsapi"></script>
+        <script src="./OCandlestickChart.js"></script>
+
+        <script>
+            OANDA.auth.token = "<<TOKEN>>";
+            OANDA.auth.enabled = true;
+            var accountId = '<<ACCOUNT ID>>';
+
+            OANDA.baseURL = "https://api-fxpractice.oanda.com";
+            google.load("visualization", "1.1", {packages:["corechart", "controls"]});
+
+            $('document').ready( function() {
+
+                //So we don't have to keep making new date objects..
+                var now = new Date();
+
+                var chart = new OCandlestickChart(document.getElementById('dashboard'),
+                                document.getElementById('chart'), document.getElementById('control'), document.getElementById('error'));
+
+                //Will run chart with default values.
+                google.setOnLoadCallback(function() { chart.render() });
+
+                //Populate the granularity select box:
+                for(var i = 0; i < chart.granularities.length; i++) {
+                    gran = chart.granularities[i];
+                    $('#granularitySelector').append($('<option>', { text : gran, value : gran }));
+                    $('#granularitySelector').val('M30');
+                }
+
+                //Populate the instrument select box:
+                OANDA.rate.instruments(accountId, ['instrument'], function(response) {
+                    for(var i = 0; i < response.instruments.length; i++) {
+                        var instrument = response.instruments[i].instrument;
+                        $('#instrumentSelector').append($('<option>', { value : instrument, text : instrument }));
+                    }
+                    //Make sure an instrument is set and everything is ready to go:
+                    $('#instrumentSelector').val('TWTR');
+                });
+
+                //Populate the year select box:
+                for(var i = now.getFullYear(); i > 2010; i--) {
+                    $('#startDate .year').append($('<option>', { value : i, text : i}));
+		            $('#stopDate .year').append($('<option>', { value : i, text : i}));
+                }
+                //Default to current year:
+                $('#startDate .year').val(now.getFullYear());
+                $('#stopDate .year').val(now.getFullYear());
+
+                //Populate the month select box:
+                var months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August',
+                'September', 'October', 'November', 'December'];
+                for(var i = 0; i < months.length; i++)
+                {
+                    $('#startDate .month').append($('<option>', {value : i, text : months[i] }));
+                    $('#stopDate .month').append($('<option>', {value : i, text : months[i] }));
+                }
+
+                //Default to current month:
+                $('#startDate .month').val(now.getMonth());
+                $('#stopDate .month').val(now.getMonth());
+
+                //Populate the day select box:
+                var populateDaySelect = function($selectBox) {
+                    var date = new Date();
+                    var selectedYear = $selectBox.children('.year').val();
+                    var selectedMonth = $selectBox.children('.month').val();
+                    $selectBox.children('.day').empty();
+
+                    var numDays = 0;
+                    if(selectedMonth == date.getMonth() && selectedYear == date.getFullYear()) {
+                        numDays = date.getDate();
+                    } else {
+                        numDays = OCandlestickChart.util.getDaysInMonth(selectedYear, selectedMonth);
+                    }
+
+                    for(var i = 1; i <= numDays; i++) {
+                        $selectBox.children('.day').append($('<option>', { value : i, text : i}));
+                    }
+                }
+                populateDaySelect($('#startDate'));
+                populateDaySelect($('#stopDate'));
+                $('#startDate .day').val(now.getDate());
+                $('#stopDate .day').val(now.getDate());
+
+                $('#instrumentSelector').change( function() {
+                    chart.setInstrument($('#instrumentSelector').val());
+                });
+
+                $('#granularitySelector').change(function() {
+                    chart.setGranularity($('#granularitySelector').val());
+                });
+
+                $('#startDate .year').change(function() {
+                    var newYear = $('#startDate .year').val();
+                    populateDaySelect($('#startDate'));
+                    chart.setStartTime({ 'year' : newYear });
+
+                });
+
+                $('#startDate .month').change(function() {
+                    var newMonth = $('#startDate .month').val();
+                    populateDaySelect($('#startDate'));
+                    chart.setStartTime({ 'month' : newMonth });
+                });
+
+                $('#startDate .day').change(function() {
+                    var newDay = $('#startDate .day').val();
+                    chart.setStartTime({ 'day' : newDay });
+                });
+
+ 		        $('#stopDate .year').change(function() {
+                    var newYear = $('#stopDate .year').val();
+                    populateDaySelect($('#stopDate'));
+                    chart.setEndTime({ 'year' : newYear });
+                });
+
+                $('#stopDate .month').change(function() {
+                    var newMonth = $('#stopDate .month').val();
+                    populateDaySelect($('#stopDate'));
+                    chart.setEndTime({ 'month' : newMonth });
+                });
+
+                $('#stopDate .day').change(function() {
+                    var newDay = $('#stopDate .day').val();
+                    chart.setEndTime({ 'day' : newDay });
+                });
+
+                //Populate hours/minutes/seconds:
+                for(var i = 0; i < 24; i++) {
+                    $('.hours').append($('<option>', {value : i, text : i }));
+                }
+
+                for (var i = 1; i <= 60; i++) {
+                    $('.minutes').append($('<option>', {value : i, text: i}));
+                    $('.seconds').append($('<option>', {value : i, text: i}));
+                }
+
+                $('#startDate .hours').change( function() {
+                    var newHour = $('#startDate .hours').val();
+                    chart.setStartTime({'hours' : newHour});
+                });
+
+                $('#startDate .minutes').change( function() {
+                    var newMinutes = $('#startDate .minutes').val();
+                    chart.setStartTime({'minutes' : newMinutes});
+                });
+
+
+                $('#startDate .seconds').change( function() {
+                    var newSeconds = $('#startDate .minutes').val();
+                    chart.setStartTime({'seconds' : newSeconds});
+                });
+            });
+        </script>
+
+        <style>
+            #chart {
+                overflow-x:auto;
+                overflow-y:hidden;
+            }
+
+            .dateSelect {
+
+                border: 1px solid black;
+                margin: 4px;
+                padding: 1px;
+                width: 340px;
+
+            }
+            .dateSelect h4 {
+                margin: 0px;
+                padding: 1px;
+            }
+
+            #chart, #control {
+                width : 100%;
+            }
+            #chart {
+                margin: 20px 0 0 0;
+                height : 800px;
+            }
+            #control {
+                height : 50px;
+            }
+            #error {
+                margin:8px;
+            }
+        </style>
+    </head>
+
+    <body>
+        <form>
+            <label for="instrumentSelector">Instrument Selector:</label>
+            <select id="instrumentSelector"></select>
+            <label for="granularitySelector">Granularity Selector:</label>
+            <select id="granularitySelector"></select>
+            <input type="checkbox" name="streaming" value="StreamingEnabled" id="streamingCheckbox">Streaming</input>
+            <fieldset class="dateSelect" id="startDate">
+                <h4>Start Date:</h4>
+                <label>Year:</label>
+                <select class="year"></select>
+                <label>Month:</label>
+                <select class="month"></select>
+                <label>Day:</label>
+                <select class="day"></select>
+                <label>Hours:</label>
+                <select class="hours"></select>
+                <label>Minutes:</label>
+                <select class="minutes"></select>
+                <label>Seconds:</label>
+                <select class="seconds"></select>
+            </fieldset>
+	    <fieldset class="dateSelect" id="stopDate">
+                <h4>Stop Date:</h4>
+                <label>Year:</label>
+                <select class="year"></select>
+                <label>Month:</label>
+                <select class="month"></select>
+                <label>Day:</label>
+                <select class="day"></select>
+            </fieldset>
+        </form>
+        <div id='dashboard'>
+            <div id='chart'></div>
+            <div id='control'></div>
+            <div id='error'</div>
+        </div>
+    </body>
+</html>
