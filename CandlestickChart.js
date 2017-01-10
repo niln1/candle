@@ -1,6 +1,6 @@
-// OCandlestickChart
+// CandlestickChart
 // Renders midpoint based candlesticks as a candlestick chart.
-// OANDA, 2013
+// NilN1, 2013
 
 /* Constructor: Creates a new chart, sets up default chart and chart display options, creates and binds chart to control.
  * Arguments:

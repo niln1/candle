@@ -4,9 +4,8 @@
     <head>
         <title>Simple rates graph</title>
         <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
-        <script src="http://developer.oanda.com/oandajs/oanda.js"></script>
         <script src="https://www.google.com/jsapi"></script>
-        <script src="./OCandlestickChart.js"></script>
+        <script src="./CandlestickChart.js"></script>
 
         <script>
             OANDA.auth.token = "<<TOKEN>>";
@@ -33,16 +32,6 @@
                     $('#granularitySelector').append($('<option>', { text : gran, value : gran }));
                     $('#granularitySelector').val('M30');
                 }
-
-                //Populate the instrument select box:
-                OANDA.rate.instruments(accountId, ['instrument'], function(response) {
-                    for(var i = 0; i < response.instruments.length; i++) {
-                        var instrument = response.instruments[i].instrument;
-                        $('#instrumentSelector').append($('<option>', { value : instrument, text : instrument }));
-                    }
-                    //Make sure an instrument is set and everything is ready to go:
-                    $('#instrumentSelector').val('TWTR');
-                });
 
                 //Populate the year select box:
                 for(var i = now.getFullYear(); i > 2010; i--) {
