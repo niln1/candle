@@ -1,4 +1,4 @@
-Candlestick Graph
+JustForFun Candle Graph
 ==================
 
 A small library for displaying TWTR's rate history data in a candlestick chart with a line chart control that allows filtering the candlesticks.
@@ -30,11 +30,6 @@ Google requires that it's API be initialized before using any functions. You mus
 
 **Note:** The unstable version (1.1) of both modules is required to stop candlesticks from being cut off at the edges of the graph.
 
-```HTML
-<script>
-    OANDA.baseURL = "http://api-sandbox.oanda.com"
-</script>
-```
 
 ###HTML Structure
 The candlestick chart requires three DOM elements: one for the candlestick chart, one for the line chart, which must both be wrapped in the same parent container, and an error message container which can go anywhere.
