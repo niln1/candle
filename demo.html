@@ -4,22 +4,22 @@
     <head>
         <title>Simple rates graph</title>
         <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
-        <script src="https://www.google.com/jsapi"></script>
+        <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
         <script src="./CandlestickChart.js"></script>
 
         <script>
-            google.load("visualization", "1.1", {packages:["corechart", "controls"]});
+          google.charts.load('current', {'packages':['corechart', 'controls']});
+          google.charts.setOnLoadCallback(drawDashboard);
 
-            $('document').ready( function() {
+          function drawDashboard() {
 
                 //So we don't have to keep making new date objects..
                 var now = new Date();
 
-                var chart = new OCandlestickChart(document.getElementById('dashboard'),
+                var chart = new CandlestickChart(document.getElementById('dashboard'),
                                 document.getElementById('chart'), document.getElementById('control'), document.getElementById('error'));
 
-                //Will run chart with default values.
-                google.setOnLoadCallback(function() { chart.render() });
+                chart.render()
 
                 //Populate the granularity select box:
                 for(var i = 0; i < chart.granularities.length; i++) {
@@ -61,7 +61,7 @@
                     if(selectedMonth == date.getMonth() && selectedYear == date.getFullYear()) {
                         numDays = date.getDate();
                     } else {
-                        numDays = OCandlestickChart.util.getDaysInMonth(selectedYear, selectedMonth);
+                        numDays = CandlestickChart.util.getDaysInMonth(selectedYear, selectedMonth);
                     }
 
                     for(var i = 1; i <= numDays; i++) {
@@ -141,7 +141,7 @@
                     var newSeconds = $('#startDate .minutes').val();
                     chart.setStartTime({'seconds' : newSeconds});
                 });
-            });
+            };
         </script>
 
         <style>
@@ -176,6 +176,13 @@
             #error {
                 margin:8px;
             }
+            .overlay-marker {
+    width: 50px;
+    height: 50px;
+    position: absolute;
+    top: 53px;   /* chartArea top */
+    left: 528px; /* chartArea left */
+}
         </style>
     </head>
 
@@ -216,5 +223,9 @@
             <div id='control'></div>
             <div id='error'</div>
         </div>
+        <div class="overlay-marker">
+   <img src="https://developers.google.com/chart/interactive/images/zombie_150.png" height="50">
+</div>
+
     </body>
 </html>
