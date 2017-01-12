@@ -43,6 +43,11 @@ CandlestickChart.prototype.render = function() {
      */
     function queryFixed(onComplete) {
 
+      var svgContainer = d3.select("#overlay")
+                            .append("svg")
+                            .attr("width", '100%')
+                            .attr("height", 800)
+
         $.get(`https://query.yahooapis.com/v1/public/yql?q=select%20*%20from%20yahoo.finance.historicaldata%20where%20symbol%20%3D%20%22TWTR%22%20and%20startDate%20%3D%20%222016-12-01%22%20and%20endDate%20%3D%20%222017-01-10%22&format=json&diagnostics=true&env=store%3A%2F%2Fdatatables.org%2Falltableswithkeys&callback=`,
         function(response) {
             var quotes = response.query.results.quote
@@ -73,15 +78,119 @@ CandlestickChart.prototype.render = function() {
 
             var chart = new google.visualization.CandlestickChart(document.getElementById('chart'));
 
-            function placeMarker(dataTable) {
-                var cli = this.getChartLayoutInterface();
-                var chartArea = cli.getChartAreaBoundingBox();
-                document.querySelector('.overlay-marker').style.top = Math.floor(cli.getYLocation(dataTable.getValue(0, 1))) - 0 + "px";
-                document.querySelector('.overlay-marker').style.left = Math.floor(cli.getXLocation(0)) - 10 + "px";
-            };
+            // function placeMarker(dataTable) {
+            //     var cli = this.getChartLayoutInterface();
+            //     var chartArea = cli.getChartAreaBoundingBox();
+            //     document.querySelector('.overlay-marker').style.top = Math.floor(cli.getYLocation(dataTable.getValue(0, 1))) - 0 + "px";
+            //     document.querySelector('.overlay-marker').style.left = Math.floor(cli.getXLocation(0)) - 10 + "px";
+            // };
+
+
+//     data.addColumn('string', 'Date');
+    // data.addColumn('number', 'Low');
+    // data.addColumn('number', 'Close');
+    // data.addColumn('number', 'Open');
+    // data.addColumn('number', 'High');
+            function addLowestDots(dataTable) {
+              var cli = this.getChartLayoutInterface();
+              var chartArea = cli.getChartAreaBoundingBox();
+              var sortByLow = dataTable.getSortedRows([{column: 1}]); // sort by low
+
+              function getLow(x) {
+                var lowest = dataTable.getValue(sortByLow[x], 1);
+
+                var Y = cli.getYLocation(lowest);
+                var X = cli.getXLocation(sortByLow[x])
+
+                var dot = document.createElement("div");    // Create with DOM
+
+                dot.style.top = Y + "px";
+                dot.style.left = X + "px";
+                dot.className = 'green-dot';
+
+                dot.X = X;
+                dot.Y = Y;
+
+                return dot
+              }
+              var chartDiv = document.querySelector('#chart > div > div'); // magic selector :()
+              chartDiv.appendChild(getLow(0));
+              chartDiv.appendChild(getLow(1));
+              chartDiv.appendChild(getLow(2));
+              drawStraightLine(getLow(0), getLow(1))
+
+            }
+
+            function addTopDots(dataTable) {
+              var cli = this.getChartLayoutInterface();
+              var chartArea = cli.getChartAreaBoundingBox();
+              var sortByLow = dataTable.getSortedRows([{column: 4}]); // sort by low
+
+              function getHigh(x) {
+                var top = dataTable.getValue(sortByLow[sortByLow.length-(x+1)], 4);
+
+                var Y = cli.getYLocation(top);
+                var X = cli.getXLocation(sortByLow[sortByLow.length-(x+1)])
+
+                var dot = document.createElement("div");    // Create with DOM
+
+                dot.style.top = Y + "px";
+                dot.style.left = X + "px";
+                dot.className = 'red-dot';
+                dot.X = X;
+                dot.Y = Y;
+
+                return dot
+              }
+              var chartDiv = document.querySelector('#chart > div > div'); // magic selector :()
+              chartDiv.appendChild(getHigh(0));
+              chartDiv.appendChild(getHigh(1));
+              chartDiv.appendChild(getHigh(2));
+              drawStraightLine(getHigh(0), getHigh(2))
+            }
+
+            function drawLine(d1, d2) {
+                 var circle = svgContainer.append("line")
+                                          .attr("x1", d1.X)
+                                          .attr("y1", d1.Y)
+                                          .attr("x2", d2.X)
+                                          .attr("y2", d2.Y)
+                                          .attr("stroke-width", 2)
+                                          .attr("stroke", "black");
+
+            }
+
+            function drawStraightLine(d1, d2) {
+                var k = (d2.Y-d1.Y)/(d2.X-d1.X)
+                var b = d2.Y-k * (d2.X)
+
+                function getY(x) {
+                    return (k * x) + b
+                }
+
+                function getX(y) {
+                    return (y - b) / k
+                }
+
+                 var circle = svgContainer.append("line")
+                                          .attr("x1", 0)
+                                          .attr("y1", getY(0))
+                                          .attr("x2", window.innerWidth)
+                                          .attr("y2", getY(window.innerWidth))
+                                          .attr("stroke-width", 2)
+                                          .attr("stroke", "black");
+
+            }
+
+
+            // google.visualization.events.addListener(chart, 'ready',
+            //     placeMarker.bind(chart, data));
 
             google.visualization.events.addListener(chart, 'ready',
-                placeMarker.bind(chart, data));
+                addLowestDots.bind(chart, data));
+
+            google.visualization.events.addListener(chart, 'ready',
+                addTopDots.bind(chart, data));
 
             chart.draw(data, options);
         })
@@ -116,117 +225,6 @@ CandlestickChart.prototype.render = function() {
     }
 };
 
-/* Clears the chart and control with their internal reset methods and cancels and polling.
- */
-CandlestickChart.prototype.reset = function() {
-
-    // if(this.control) {
-    //     var controlHandle = this.control.getControl();
-    //     controlHandle.resetControl();
-    // }
-
-    if(this.chart) {
-        var chartHandle = this.chart.getChart();
-        chartHandle.clearChart();
-    }
-
-    if(this.callbacks.interval > 0) {
-        clearInterval(this.callbacks.interval);
-    }
-
-    if(this.callbacks.timeout > 0) {
-        clearTimeout(this.callbacks.timeout);
-    }
-};
-
-/* Changes the granularity of the candles displayed on the chart. Will reset the chart.
- */
-CandlestickChart.prototype.setGranularity = function(granularity) {
-
-    if(this.granularities.indexOf(granularity) < 0) {
-        this.timedError("Not a valid granularity!");
-    } else {
-        this.granularity = granularity;
-        this.reset();
-        this.render();
-    }
-    return this.granularity;
-};
-
-/* Changes the instrument of the candles shown in the chart. Will reset the chart.
- */
-CandlestickChart.prototype.setInstrument = function(instrument) {
-
-    this.instrument = instrument;
-    this.reset();
-    this.render();
-    return this.instrument;
-};
-
-/* Changes the start time of the displayed candles. Will reset the chart.
- */
-CandlestickChart.prototype.setStartTime = function(params) {
-
-
-    var newStartTime = new Date(params.year    || this.startTime.getFullYear(),
-                                params.month   || this.startTime.getMonth(),
-                                params.day     || this.startTime.getDate(),
-                                params.hours   || this.startTime.getHours(),
-                                params.minutes || this.startTime.getMinutes(),
-                                params.seconds || this.startTime.getSeconds());
-
-    if(newStartTime >= this.endTime.getTime()) {
-        this.timedError("Start time set to be greater than or equal to end time");
-    } else {
-        this.startTime = newStartTime;
-        this.reset();
-        this.render();
-    }
-    return this.startTime;
-};
-
-/* Changes the end time of the displayed candles. Will reset the chart.
- */
-CandlestickChart.prototype.setEndTime = function(params) {
-
-    var newEndTime  = new Date(params.year    || this.endTime.getFullYear(),
-                               params.month   || this.endTime.getMonth(),
-                               params.day     || this.endTime.getDate(),
-                               params.hours   || this.endTime.getHours(),
-                               params.minutes || this.endTime.getMinutes(),
-                               params.seconds || this.endTime.getSeconds());
-
-    if(newEndTime <= this.startTime.getTime()) {
-        this.timedError("End time set less than or equal to start time.");
-    } else {
-        this.endTime = newEndTime;
-        this.reset();
-        this.render();
-    }
-    return this.endTime;
-};
-
-/* Toggles streaming on & off.
- */
-CandlestickChart.prototype.toggleStreaming = function(streamingEnabled) {
-
-    this.streamingEnabled = streamingEnabled;
-    this.endTime = new Date();
-    this.reset();
-    this.render();
-};
-
-/*
- * Displays and error string for the specified amount of time to the DOM object which acts as the error container.
- */
-CandlestickChart.prototype.timedError = function(errorString, timeout) {
-
-    var error = google.visualization.errors.addError(this.parentContainer, errorString, "",
-            {'type' : 'error',
-             'style' : 'font-size:1em;'});
-    setTimeout(function() {google.visualization.errors.removeError(error);}, timeout || 5000);
-
-};
 
 /* 'Static' utility functions
  */
