@@ -48,7 +48,7 @@ CandlestickChart.prototype.render = function() {
                             .attr("width", '100%')
                             .attr("height", 800)
 
-        $.get(`https://query.yahooapis.com/v1/public/yql?q=select%20*%20from%20yahoo.finance.historicaldata%20where%20symbol%20%3D%20%22TWTR%22%20and%20startDate%20%3D%20%222016-12-01%22%20and%20endDate%20%3D%20%222017-01-10%22&format=json&diagnostics=true&env=store%3A%2F%2Fdatatables.org%2Falltableswithkeys&callback=`,
+        $.get(`https://query.yahooapis.com/v1/public/yql?q=select%20*%20from%20yahoo.finance.historicaldata%20where%20symbol%20%3D%20%22TWTR%22%20and%20startDate%20%3D%20%222016-12-01%22%20and%20endDate%20%3D%20%222017-01-11%22&format=json&diagnostics=true&env=store%3A%2F%2Fdatatables.org%2Falltableswithkeys&callback=`,
         function(response) {
             var quotes = response.query.results.quote
             console.log(quotes)
@@ -144,9 +144,8 @@ CandlestickChart.prototype.render = function() {
               }
               var chartDiv = document.querySelector('#chart > div > div'); // magic selector :()
               chartDiv.appendChild(getHigh(0));
-              chartDiv.appendChild(getHigh(1));
-              chartDiv.appendChild(getHigh(2));
-              drawStraightLine(getHigh(0), getHigh(2))
+              chartDiv.appendChild(getHigh(3));
+              drawStraightLine(getHigh(0), getHigh(3))
             }
 
             function drawLine(d1, d2) {
