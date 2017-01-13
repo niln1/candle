@@ -41,33 +41,37 @@ CandlestickChart.prototype.render = function() {
 
     /* Queries the API for a fixed amount of candles, calls the onComplete method with the completed data set.
      */
+
+    function formatDate(date) {
+        var d = new Date(date),
+            month = '' + (d.getMonth() + 1),
+            day = '' + d.getDate(),
+            year = d.getFullYear();
+
+        if (month.length < 2) month = '0' + month;
+        if (day.length < 2) day = '0' + day;
+
+        return [year, month, day].join('-');
+    }
+
     function queryFixed(onComplete) {
+        var symbol = 'FB'
+        var startDate = '2016-12-01'
+        var endDate = formatDate(new Date());
 
-      var svgContainer = d3.select("#overlay")
-                            .append("svg")
-                            .attr("width", '100%')
-                            .attr("height", 800)
-
-        $.get(`https://query.yahooapis.com/v1/public/yql?q=select%20*%20from%20yahoo.finance.historicaldata%20where%20symbol%20%3D%20%22TWTR%22%20and%20startDate%20%3D%20%222016-12-01%22%20and%20endDate%20%3D%20%222017-01-11%22&format=json&diagnostics=true&env=store%3A%2F%2Fdatatables.org%2Falltableswithkeys&callback=`,
+        $.get('https://query.yahooapis.com/v1/public/yql?q=select%20*%20from%20yahoo.finance.historicaldata%20where%20symbol%20%3D%20%22'
+        +symbol+
+        '%22%20and%20startDate%20%3D%20%22'
+        +startDate+
+        '%22%20and%20endDate%20%3D%20%22'
+        +endDate+
+        '%22%20&format=json&diagnostics=true&env=store%3A%2F%2Fdatatables.org%2Falltableswithkeys&callback=',
         function(response) {
             var quotes = response.query.results.quote
             console.log(quotes)
             quotes.forEach(function(quote, i) {
               data.addRow([quote.Date, Number(quote.Low), Number(quote.Close), Number(quote.Open), Number(quote.High)]);
             })
-
-            console.log(data)
-
-            // sample
-            // Adj_Close:"16.299999"
-            // Close:"16.299999"
-            // Date:"2016-12-30"
-            // High:"16.57"
-            // Low:"16.219999"
-            // Open:"16.309999"
-            // Symbol:"TWTR"
-            // Volume:"13923200"
-            // onComplete(data)
 
             var options = {
               legend:'none',
@@ -78,118 +82,153 @@ CandlestickChart.prototype.render = function() {
 
             var chart = new google.visualization.CandlestickChart(document.getElementById('chart'));
 
-            // function placeMarker(dataTable) {
-            //     var cli = this.getChartLayoutInterface();
-            //     var chartArea = cli.getChartAreaBoundingBox();
-            //     document.querySelector('.overlay-marker').style.top = Math.floor(cli.getYLocation(dataTable.getValue(0, 1))) - 0 + "px";
-            //     document.querySelector('.overlay-marker').style.left = Math.floor(cli.getXLocation(0)) - 10 + "px";
-            // };
-
 
 //     data.addColumn('string', 'Date');
     // data.addColumn('number', 'Low');
     // data.addColumn('number', 'Close');
     // data.addColumn('number', 'Open');
     // data.addColumn('number', 'High');
-            function addLowestDots(dataTable) {
-              var cli = this.getChartLayoutInterface();
-              var chartArea = cli.getChartAreaBoundingBox();
-              var sortByLow = dataTable.getSortedRows([{column: 1}]); // sort by low
-
-              function getLow(x) {
-                var lowest = dataTable.getValue(sortByLow[x], 1);
-
-                var Y = cli.getYLocation(lowest);
-                var X = cli.getXLocation(sortByLow[x])
-
-                var dot = document.createElement("div");    // Create with DOM
-
-                dot.style.top = Y + "px";
-                dot.style.left = X + "px";
-                dot.className = 'green-dot';
-
-                dot.X = X;
-                dot.Y = Y;
-
-                return dot
+            function getLow(x) {
+              var sortByLow = data.getSortedRows([{column: 1}]); // sort by low
+              var lowest = data.getValue(sortByLow[x], 1)
+              return {
+                x: sortByLow[x],
+                y: lowest
               }
-              var chartDiv = document.querySelector('#chart > div > div'); // magic selector :()
-              chartDiv.appendChild(getLow(0));
-              chartDiv.appendChild(getLow(1));
-              chartDiv.appendChild(getLow(2));
-              drawStraightLine(getLow(0), getLow(1))
-
             }
 
-            function addTopDots(dataTable) {
-              var cli = this.getChartLayoutInterface();
-              var chartArea = cli.getChartAreaBoundingBox();
-              var sortByLow = dataTable.getSortedRows([{column: 4}]); // sort by low
-
-              function getHigh(x) {
-                var top = dataTable.getValue(sortByLow[sortByLow.length-(x+1)], 4);
-
-                var Y = cli.getYLocation(top);
-                var X = cli.getXLocation(sortByLow[sortByLow.length-(x+1)])
-
-                var dot = document.createElement("div");    // Create with DOM
-
-                dot.style.top = Y + "px";
-                dot.style.left = X + "px";
-                dot.className = 'red-dot';
-                dot.X = X;
-                dot.Y = Y;
-
-                return dot
+            function isLowTurner(value, row, col, table) {
+              var lowData = value
+              try {
+                var rightData = table.getValue(row - 1, col);
+                var leftData = table.getValue(row + 1, col);
+                if (leftData > lowData && rightData > lowData) {
+                  return true
+                }
+                return false
+              } catch(e) {
+                return false
               }
+            }
+
+            function isHighTurner(value, row, col, table) {
+              var lowData = value
+              try {
+                var rightData = table.getValue(row - 1, col);
+                var leftData = table.getValue(row + 1, col);
+                if (leftData < lowData && rightData < lowData) {
+                  return true
+                }
+                return false
+              } catch(e) {
+                return false
+              }
+            }
+
+            function getLowTurnerArray(data) {
+              var LowTurnersX = data.getFilteredRows([{column: 1, test: isLowTurner}])
+              return LowTurnersX
+            }
+
+            function getHighTurnerArray(data) {
+              var LowTurnersX = data.getFilteredRows([{column: 4, test: isHighTurner}])
+              return LowTurnersX
+            }
+
+            function drawHighTurners(data) {
+              var cli = chart.getChartLayoutInterface();
+              var chartArea = cli.getChartAreaBoundingBox();
+              var LowTurnersX = getHighTurnerArray(data)
+
+
+              var dots = LowTurnersX.map(function(each) {
+                return getLocation(each, 4)
+              })
+
+              for (var i = 0; i< dots.length; i++ ) {
+                for (var j = i + 1; j < dots.length; j++ ) {
+                  var first = dots[i]
+                  var next = dots[j]
+                  if (first.y < next.y) {
+                    drawStraightLine(drawDot(first, cli, 'red-dot'), drawDot(next, cli, 'red-dot'))
+                  }
+                }
+              }
+
+              var dotElements = dots.map(function(each) {
+                return drawDot(each, cli, 'red-dot')
+              })
+
               var chartDiv = document.querySelector('#chart > div > div'); // magic selector :()
-              chartDiv.appendChild(getHigh(0));
-              chartDiv.appendChild(getHigh(3));
-              drawStraightLine(getHigh(0), getHigh(3))
+
+              dotElements.forEach(function (each) {
+                chartDiv.appendChild(each);
+              })
             }
 
-            function drawLine(d1, d2) {
-                 var circle = svgContainer.append("line")
-                                          .attr("x1", d1.X)
-                                          .attr("y1", d1.Y)
-                                          .attr("x2", d2.X)
-                                          .attr("y2", d2.Y)
-                                          .attr("stroke-width", 2)
-                                          .attr("stroke", "black");
 
-            }
+            function drawLowTurners(data) {
+              var cli = chart.getChartLayoutInterface();
+              var chartArea = cli.getChartAreaBoundingBox();
+              var LowTurnersX = getLowTurnerArray(data)
 
-            function drawStraightLine(d1, d2) {
-                var k = (d2.Y-d1.Y)/(d2.X-d1.X)
-                var b = d2.Y-k * (d2.X)
 
-                function getY(x) {
-                    return (k * x) + b
+              var dots = LowTurnersX.map(function(each) {
+                return getLocation(each, 1)
+              })
+
+              for (var i = 0; i< dots.length; i++ ) {
+                for (var j = i + 1; j < dots.length; j++ ) {
+                  var first = dots[i]
+                  var next = dots[j]
+                  if (first.y > next.y) {
+                    drawStraightLine(drawDot(first, cli, 'green-dot'), drawDot(next, cli, 'green-dot'))
+                  }
                 }
+              }
 
-                function getX(y) {
-                    return (y - b) / k
-                }
+              var dotElements = dots.map(function(each) {
+                return drawDot(each, cli, 'green-dot')
+              })
 
-                 var circle = svgContainer.append("line")
-                                          .attr("x1", 0)
-                                          .attr("y1", getY(0))
-                                          .attr("x2", window.innerWidth)
-                                          .attr("y2", getY(window.innerWidth))
-                                          .attr("stroke-width", 2)
-                                          .attr("stroke", "black");
+              var chartDiv = document.querySelector('#chart > div > div'); // magic selector :()
 
+              dotElements.forEach(function (each) {
+                chartDiv.appendChild(each);
+              })
             }
 
+            function getLocation(x, col) {
+              var y = data.getValue(x, col)
+              return {
+                x: x,
+                y: y
+              }
+            }
 
-            // google.visualization.events.addListener(chart, 'ready',
-            //     placeMarker.bind(chart, data));
+            function drawDot(d, cli, className) {
+              var x = d.x
+              var y = d.y
+              var Y = cli.getYLocation(y);
+              var X = cli.getXLocation(x)
+
+              var dot = document.createElement("div");    // Create with DOM
+
+              dot.style.top = Y + "px";
+              dot.style.left = X + "px";
+              dot.className = className;
+
+              dot.X = X;
+              dot.Y = Y;
+
+              return dot
+            }
 
             google.visualization.events.addListener(chart, 'ready',
-                addLowestDots.bind(chart, data));
+                drawHighTurners.bind(chart, data));
 
             google.visualization.events.addListener(chart, 'ready',
-                addTopDots.bind(chart, data));
+                drawLowTurners.bind(chart, data));
 
             chart.draw(data, options);
         })
@@ -221,6 +260,67 @@ CandlestickChart.prototype.render = function() {
         self.chart.setOptions(self.chartOpts);
         // self.control.setOptions(self.controlOpts);
         self.chart.draw(data);
+    }
+
+    var svgContainer = this.svgContainer = d3.select("#overlay")
+                          .append("svg")
+                          .attr("width", '100%')
+                          .attr("height", 800)
+
+    function drawLine(d1, d2) {
+         var circle = svgContainer.append("line")
+                                  .attr("x1", d1.X)
+                                  .attr("y1", d1.Y)
+                                  .attr("x2", d2.X)
+                                  .attr("y2", d2.Y)
+                                  .attr("stroke-width", 2)
+                                  .attr("stroke", "black");
+
+    }
+
+    function drawValidStraightLine(d1, d2, validation) {
+        var k = (d2.Y-d1.Y)/(d2.X-d1.X)
+        var b = d2.Y-k * (d2.X)
+
+        function getY(x) {
+            return (k * x) + b
+        }
+
+        function getX(y) {
+            return (y - b) / k
+        }
+
+        if (validation(d1, d2)) {
+          var circle = svgContainer.append("line")
+                                   .attr("x1", 0)
+                                   .attr("y1", getY(0))
+                                   .attr("x2", window.innerWidth)
+                                   .attr("y2", getY(window.innerWidth))
+                                   .attr("stroke-width", 2)
+                                   .attr("stroke", "black");
+        }
+    }
+
+    function drawStraightLine(d1, d2) {
+        var k = (d2.Y-d1.Y)/(d2.X-d1.X)
+        var b = d2.Y-k * (d2.X)
+
+        function getY(x) {
+            return (k * x) + b
+        }
+
+        function getX(y) {
+            return (y - b) / k
+        }
+
+         var circle = svgContainer.append("line")
+                                  .attr("x1", 0)
+                                  .attr("y1", getY(0))
+                                  .attr("x2", window.innerWidth)
+                                  .attr("y2", getY(window.innerWidth))
+                                  .attr("stroke-width", 2)
+                                  .attr("stroke", "black");
+
     }
 };
 
