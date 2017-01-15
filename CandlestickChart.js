@@ -82,6 +82,14 @@ CandlestickChart.prototype.render = function() {
 
             var chart = new google.visualization.CandlestickChart(document.getElementById('chart'));
 
+            google.visualization.events.addListener(chart, 'ready',
+                drawHighTurners.bind(chart, data));
+
+            // google.visualization.events.addListener(chart, 'ready',
+            //     drawLowTurners.bind(chart, data));
+
+            chart.draw(data, options);
+
 
 //     data.addColumn('string', 'Date');
     // data.addColumn('number', 'Low');
@@ -145,10 +153,29 @@ CandlestickChart.prototype.render = function() {
                 return getLocation(each, 4)
               })
 
+              // futureFunction(dots, function(first, next) {
+              //   if (first.y < next.y) {
+              //     var getY = getStraightLineFunction(drawDot(first, cli, 'red-dot'), drawDot(next, cli, 'red-dot')).getY
+              //     drawStraightLine(getY)
+              //   }
+              // })
+
               futureFunction(dots, function(first, next) {
                 if (first.y < next.y) {
                   var getY = getStraightLineFunction(drawDot(first, cli, 'red-dot'), drawDot(next, cli, 'red-dot')).getY
-                  drawStraightLine(getY)
+
+                  console.log(first, next)
+
+                  var status = checkInbetween(first, next, function(i) {
+                    if (getLocation(i, 2).y > getY(i)) { // get close price
+                      return true
+                    }
+                    return false
+                  })
+
+                  if (!status) {
+                    drawStraightLine(getY)
+                  }
                 }
               })
 
@@ -171,6 +198,13 @@ CandlestickChart.prototype.render = function() {
                   cb(first, next)
                 }
               }
+            }
+
+            function checkInbetween(dot1, dot2, cb) {
+              for (var i = dot1.x; i< dot2.x; i++ ) {
+                  if (cb(i)) return true
+              }
+              return false
             }
 
             function drawLowTurners(data) {
@@ -226,14 +260,6 @@ CandlestickChart.prototype.render = function() {
 
               return dot
             }
-
-            google.visualization.events.addListener(chart, 'ready',
-                drawHighTurners.bind(chart, data));
-
-            google.visualization.events.addListener(chart, 'ready',
-                drawLowTurners.bind(chart, data));
-
-            chart.draw(data, options);
         })
     }
 
@@ -270,14 +296,15 @@ CandlestickChart.prototype.render = function() {
                           .attr("width", '100%')
                           .attr("height", 800)
 
-    function drawLine(d1, d2) {
-         var circle = svgContainer.append("line")
-                                  .attr("x1", d1.X)
-                                  .attr("y1", d1.Y)
-                                  .attr("x2", d2.X)
-                                  .attr("y2", d2.Y)
-                                  .attr("stroke-width", 2)
-                                  .attr("stroke", "black");
+    function drawLine(d1, d2, stroke) {
+      var stroke = stroke ? stroke : 'black'
+      var circle = svgContainer.append("line")
+                              .attr("x1", d1.X)
+                              .attr("y1", d1.Y)
+                              .attr("x2", d2.X)
+                              .attr("y2", d2.Y)
+                              .attr("stroke-width", 2)
+                              .attr("stroke", stroke);
 
     }
 
@@ -299,26 +326,15 @@ CandlestickChart.prototype.render = function() {
       }
     }
 
-    function drawValidStraightLine(getY, validation) {
-        if (validation(d1, d2)) {
-          var circle = svgContainer.append("line")
-                                   .attr("x1", 0)
-                                   .attr("y1", getY(0))
-                                   .attr("x2", window.innerWidth)
-                                   .attr("y2", getY(window.innerWidth))
-                                   .attr("stroke-width", 2)
-                                   .attr("stroke", "black");
-        }
-    }
-
-    function drawStraightLine(getY) {
+    function drawStraightLine(getY, stroke) {
+         var stroke = stroke ? stroke : 'black'
          var circle = svgContainer.append("line")
                                   .attr("x1", 0)
                                   .attr("y1", getY(0))
                                   .attr("x2", window.innerWidth)
                                   .attr("y2", getY(window.innerWidth))
                                   .attr("stroke-width", 2)
-                                  .attr("stroke", "black");
+                                  .attr("stroke", stroke);
 
     }
 };
