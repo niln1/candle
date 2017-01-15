@@ -55,7 +55,7 @@ CandlestickChart.prototype.render = function() {
     }
 
     function queryFixed(onComplete) {
-        var symbol = 'FB'
+        var symbol = 'TWTR'
         var startDate = '2016-12-01'
         var endDate = formatDate(new Date());
 
@@ -145,15 +145,12 @@ CandlestickChart.prototype.render = function() {
                 return getLocation(each, 4)
               })
 
-              for (var i = 0; i< dots.length; i++ ) {
-                for (var j = i + 1; j < dots.length; j++ ) {
-                  var first = dots[i]
-                  var next = dots[j]
-                  if (first.y < next.y) {
-                    drawStraightLine(drawDot(first, cli, 'red-dot'), drawDot(next, cli, 'red-dot'))
-                  }
+              futureFunction(dots, function(first, next) {
+                if (first.y < next.y) {
+                  var getY = getStraightLineFunction(drawDot(first, cli, 'red-dot'), drawDot(next, cli, 'red-dot')).getY
+                  drawStraightLine(getY)
                 }
-              }
+              })
 
               var dotElements = dots.map(function(each) {
                 return drawDot(each, cli, 'red-dot')
@@ -166,6 +163,15 @@ CandlestickChart.prototype.render = function() {
               })
             }
 
+            function futureFunction(dots, cb) {
+              for (var i = 0; i< dots.length; i++ ) {
+                for (var j = i + 1; j < dots.length; j++ ) {
+                  var first = dots[i]
+                  var next = dots[j]
+                  cb(first, next)
+                }
+              }
+            }
 
             function drawLowTurners(data) {
               var cli = chart.getChartLayoutInterface();
@@ -177,15 +183,12 @@ CandlestickChart.prototype.render = function() {
                 return getLocation(each, 1)
               })
 
-              for (var i = 0; i< dots.length; i++ ) {
-                for (var j = i + 1; j < dots.length; j++ ) {
-                  var first = dots[i]
-                  var next = dots[j]
-                  if (first.y > next.y) {
-                    drawStraightLine(drawDot(first, cli, 'green-dot'), drawDot(next, cli, 'green-dot'))
-                  }
+              futureFunction(dots, function(first, next) {
+                if (first.y > next.y) {
+                  var getY = getStraightLineFunction(drawDot(first, cli, 'green-dot'), drawDot(next, cli, 'green-dot')).getY
+                  drawStraightLine(getY)
                 }
-              }
+              })
 
               var dotElements = dots.map(function(each) {
                 return drawDot(each, cli, 'green-dot')
@@ -278,18 +281,25 @@ CandlestickChart.prototype.render = function() {
 
     }
 
-    function drawValidStraightLine(d1, d2, validation) {
-        var k = (d2.Y-d1.Y)/(d2.X-d1.X)
-        var b = d2.Y-k * (d2.X)
+    function getStraightLineFunction(d1, d2) {
+      var k = (d2.Y-d1.Y)/(d2.X-d1.X)
+      var b = d2.Y-k * (d2.X)
 
-        function getY(x) {
-            return (k * x) + b
-        }
+      function getY(x) {
+          return (k * x) + b
+      }
 
-        function getX(y) {
-            return (y - b) / k
-        }
+      function getX(y) {
+          return (y - b) / k
+      }
 
+      return {
+        getY: getY,
+        geyX: getX
+      }
+    }
+
+    function drawValidStraightLine(getY, validation) {
         if (validation(d1, d2)) {
           var circle = svgContainer.append("line")
                                    .attr("x1", 0)
@@ -301,18 +311,7 @@ CandlestickChart.prototype.render = function() {
         }
     }
 
-    function drawStraightLine(d1, d2) {
-        var k = (d2.Y-d1.Y)/(d2.X-d1.X)
-        var b = d2.Y-k * (d2.X)
-
-        function getY(x) {
-            return (k * x) + b
-        }
-
-        function getX(y) {
-            return (y - b) / k
-        }
-
+    function drawStraightLine(getY) {
          var circle = svgContainer.append("line")
                                   .attr("x1", 0)
                                   .attr("y1", getY(0))
