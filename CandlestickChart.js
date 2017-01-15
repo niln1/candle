@@ -2,27 +2,12 @@
 // Renders midpoint based candlesticks as a candlestick chart.
 // NilN1, 2013
 
-/* Constructor: Creates a new chart, sets up default chart and chart display options, creates and binds chart to control.
- * Arguments:
- * dashElement    : DOM object
- * chatElement    : DOM object
- * controlElement : DOM object
- * errorElement   : DOM object
- * candleOpts     : Object
- * dimensionOpts  : Object
- *
- * Refer to README.md for more detailed argument information.
- */
-
 google.charts.load('current', {'packages':['corechart', 'controls']});
 
 function CandlestickChart(dashElement, chartElement, controlElement, errorElement, candleOpts, dimensionOpts) {
 
 }
 
-/* render: Queries the OANDA API for candlesticks in the set time range with the set granulairty, and updates the chart with the data.
- *         If streaming is enabled, a polling loop will be started to fetch and update the chart with new candles.
- */
 CandlestickChart.prototype.render = function() {
 
     //Month granularity in seconds will be based off start time, which may cause synchronization issues while streaming
