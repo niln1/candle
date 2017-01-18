@@ -64,6 +64,14 @@ CandlestickChart.prototype.render = function() {
         $('#tag').val(symbol)
         $('#tspan').val(tspan)
 
+        $('#tag').on('change', function() {
+            document.forms['yo'].submit();
+        });
+
+        $('#tspan').on('change', function() {
+            document.forms['yo'].submit();
+        });
+
         $.get('https://query.yahooapis.com/v1/public/yql?q=select%20*%20from%20yahoo.finance.historicaldata%20where%20symbol%20%3D%20%22'
         +symbol+
         '%22%20and%20startDate%20%3D%20%22'
