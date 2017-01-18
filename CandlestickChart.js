@@ -39,10 +39,30 @@ CandlestickChart.prototype.render = function() {
         return [year, month, day].join('-');
     }
 
+    function getParameterByName(name, url) {
+        if (!url) {
+          url = window.location.href;
+        }
+        name = name.replace(/[\[\]]/g, "\\$&");
+        var regex = new RegExp("[?&]" + name + "(=([^&#]*)|&|#|$)"),
+            results = regex.exec(url);
+        if (!results) return null;
+        if (!results[2]) return '';
+        return decodeURIComponent(results[2].replace(/\+/g, " "));
+    }
+
     function queryFixed(onComplete) {
-        var symbol = 'TWTR'
-        var startDate = '2016-12-01'
-        var endDate = formatDate(new Date());
+        var symbol = getParameterByName('tag') ? getParameterByName('tag') : 'TWTR';
+        var tspan = Number(getParameterByName('tspan') ? getParameterByName('tspan') : '30');
+        var today = new Date()
+        var endDate = formatDate(today);
+        var startDate = formatDate(new Date().setDate(today.getDate()-tspan))
+
+        $('#csdate').text(startDate)
+        $('#csymbol').text(symbol)
+
+        $('#tag').val(symbol)
+        $('#tspan').val(tspan)
 
         $.get('https://query.yahooapis.com/v1/public/yql?q=select%20*%20from%20yahoo.finance.historicaldata%20where%20symbol%20%3D%20%22'
         +symbol+
@@ -52,8 +72,8 @@ CandlestickChart.prototype.render = function() {
         +endDate+
         '%22%20&format=json&diagnostics=true&env=store%3A%2F%2Fdatatables.org%2Falltableswithkeys&callback=',
         function(response) {
+            console.log(response)
             var quotes = response.query.results.quote
-            console.log(quotes)
             quotes.forEach(function(quote, i) {
               data.addRow([quote.Date, Number(quote.Low), Number(quote.Close), Number(quote.Open), Number(quote.High)]);
             })
@@ -70,8 +90,8 @@ CandlestickChart.prototype.render = function() {
             google.visualization.events.addListener(chart, 'ready',
                 drawHighTurners.bind(chart, data));
 
-            // google.visualization.events.addListener(chart, 'ready',
-            //     drawLowTurners.bind(chart, data));
+            google.visualization.events.addListener(chart, 'ready',
+                drawLowTurners.bind(chart, data));
 
             chart.draw(data, options);
 
@@ -141,25 +161,28 @@ CandlestickChart.prototype.render = function() {
               // futureFunction(dots, function(first, next) {
               //   if (first.y < next.y) {
               //     var getY = getStraightLineFunction(drawDot(first, cli, 'red-dot'), drawDot(next, cli, 'red-dot')).getY
-              //     drawStraightLine(getY)
+              //     drawRay(first, getY)
               //   }
               // })
 
               futureFunction(dots, function(first, next) {
                 if (first.y < next.y) {
-                  var getY = getStraightLineFunction(drawDot(first, cli, 'red-dot'), drawDot(next, cli, 'red-dot')).getY
-
-                  console.log(first, next)
+                  var dotFirst = drawDot(first, cli, 'red-dot')
+                  var dotNext = drawDot(next, cli, 'red-dot')
+                  var getY = getStraightLineFunction(dotFirst, dotNext).getY
 
                   var status = checkInbetween(first, next, function(i) {
-                    if (getLocation(i, 2).y > getY(i)) { // get close price
+                    var dot = drawDot(getLocation(i, 2), cli, '')
+                    if (dot.Y < getY(dot.X)) { // get close price
                       return true
                     }
                     return false
                   })
 
-                  if (!status) {
-                    drawStraightLine(getY)
+                  if (status === 'invalid') {
+                    drawRay(dotNext, getY, 'black', 0.1)
+                  } else if (status === false) {
+                    drawRay(dotNext, getY, 'black')
                   }
                 }
               })
@@ -186,10 +209,15 @@ CandlestickChart.prototype.render = function() {
             }
 
             function checkInbetween(dot1, dot2, cb) {
-              for (var i = dot1.x; i< dot2.x; i++ ) {
-                  if (cb(i)) return true
+              var status = false
+              for (var i = dot2.x - 1; i >= 0; i-- ) {
+                  if (i > dot1.x) {
+                    if (cb(i)) status = true
+                  } else {
+                    if (cb(i) && status === false) status = 'invalid'
+                  }
               }
-              return false
+              return status
             }
 
             function drawLowTurners(data) {
@@ -202,10 +230,33 @@ CandlestickChart.prototype.render = function() {
                 return getLocation(each, 1)
               })
 
+              // futureFunction(dots, function(first, next) {
+              //   if (first.y > next.y) {
+              //     var dotFirst = drawDot(first, cli, 'green-dot')
+              //     var getY = getStraightLineFunction(drawDot(first, cli, 'green-dot'), drawDot(next, cli, 'green-dot')).getY
+              //     drawRay(first, getY)
+              //   }
+              // })
+
               futureFunction(dots, function(first, next) {
                 if (first.y > next.y) {
-                  var getY = getStraightLineFunction(drawDot(first, cli, 'green-dot'), drawDot(next, cli, 'green-dot')).getY
-                  drawStraightLine(getY)
+                  var dotFirst = drawDot(first, cli, 'green-dot')
+                  var dotNext = drawDot(next, cli, 'green-dot')
+                  var getY = getStraightLineFunction(dotFirst, dotNext).getY
+
+                  var status = checkInbetween(first, next, function(i) {
+                    var dot = drawDot(getLocation(i, 2), cli, '')
+                    if (dot.Y > getY(dot.X)) { // get close price
+                      return true
+                    }
+                    return false
+                  })
+
+                  if (status === 'invalid') {
+                    drawRay(dotNext, getY, 'black', 0.1)
+                  } else if (status === false) {
+                    drawRay(dotNext, getY, 'black')
+                  }
                 }
               })
 
@@ -288,7 +339,7 @@ CandlestickChart.prototype.render = function() {
                               .attr("y1", d1.Y)
                               .attr("x2", d2.X)
                               .attr("y2", d2.Y)
-                              .attr("stroke-width", 2)
+                              .attr("stroke-width", 1)
                               .attr("stroke", stroke);
 
     }
@@ -311,15 +362,31 @@ CandlestickChart.prototype.render = function() {
       }
     }
 
-    function drawStraightLine(getY, stroke) {
+    function drawStraightLine(getY, stroke, opacity) {
          var stroke = stroke ? stroke : 'black'
+         var opacity = opacity ? opacity : 1
          var circle = svgContainer.append("line")
                                   .attr("x1", 0)
                                   .attr("y1", getY(0))
                                   .attr("x2", window.innerWidth)
                                   .attr("y2", getY(window.innerWidth))
-                                  .attr("stroke-width", 2)
-                                  .attr("stroke", stroke);
+                                  .attr("stroke-width", 1)
+                                  .attr("stroke", stroke)
+                                  .attr("stroke-opacity", opacity)
+
+    }
+
+    function drawRay(start, getY, stroke, opacity) {
+         var stroke = stroke ? stroke : 'black'
+         var opacity = opacity ? opacity : 1
+         var circle = svgContainer.append("line")
+                                  .attr("x1", start.X)
+                                  .attr("y1", start.Y)
+                                  .attr("x2", window.innerWidth)
+                                  .attr("y2", getY(window.innerWidth))
+                                  .attr("stroke-width", 0.5)
+                                  .attr("stroke", stroke)
+                                  .attr("stroke-opacity", opacity)
 
     }
 };

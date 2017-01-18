@@ -19,7 +19,7 @@
 
                 var chart = new CandlestickChart(document.getElementById('dashboard'),
                                 document.getElementById('chart'), document.getElementById('control'), document.getElementById('error'));
-
+                window.chart=chart;
                 chart.render()
             };
         </script>
@@ -68,8 +68,44 @@
 
     <body>
         <div id='dashboard'>
-            <div id='chart'></div>
-            <div id='overlay'></div>
+          <div id='chart'></div>
+          <div id='overlay'></div>
+          <div>
+            Current Symbol = <span id='csymbol'></span><br>
+            Current Start Date = <span id='csdate'></span><br>
+            <br>
+            <form>
+            TAG:
+            <select id='tag' name='tag'>
+              <option value="TWTR">TWTR</option>
+              <option value="SQ">SQ</option>
+              <option value="FB">FB</option>
+              <option value="AAPL">AAPL</option>
+              <option value="TSLA">TSLA</option>
+              <option value="LMT">LMT</option>
+              <option value="BRK-B">BRK-B</option>
+              <option value="^IXIC">^IXIC</option>
+              <option value="^DJI">^DJI</option>
+            </select>
+            Time Span:
+            <select id='tspan' name='tspan'>
+              <option value="30">30</option>
+              <option value="60">60</option>
+              <option value="90">90</option>
+              <option value="120">120</option>
+              <option value="150">150</option>
+              <option value="180">180</option>
+              <option value="210">210</option>
+              <option value="240">240</option>
+              <option value="270">270</option>
+              <option value="300">300</option>
+              <option value="330">330</option>
+              <option value="360">360</option>
+              <option value="720">720</option>
+            </select><br>
+            <button id='change' type='submit'>Change</button>
+          </form>
+          </div>
         </div>
     </body>
 </html>
