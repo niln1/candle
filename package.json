@@ -1,0 +1,21 @@
+{
+  "name": "candle",
+  "version": "0.0.1",
+  "description": "fun",
+  "main": "cc.js",
+  "dependencies": {},
+  "devDependencies": {},
+  "scripts": {
+    "build": "uglifyjs -o cc.min.js cc.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/niln1/candle.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/niln1/candle/issues"
+  },
+  "homepage": "https://github.com/niln1/candle#readme"
+}

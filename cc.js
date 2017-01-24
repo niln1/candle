@@ -4,7 +4,7 @@
 
 google.charts.load('current', {'packages':['corechart', 'controls']});
 
-function CandlestickChart(dashElement, chartElement, controlElement, errorElement, candleOpts, dimensionOpts) {
+function CandlestickChart() {
 
 }
 

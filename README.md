@@ -16,7 +16,7 @@ Before including the `CandlestickChart` file, Google's JavaScript API have to be
 Then you can include the library file:
 
 ```HTML
-<script src="./CandlestickChart.js"></script>
+<script src="./cc.js"></script>
 ```
 
 ###Initialization
