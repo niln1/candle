@@ -4,11 +4,10 @@
 
 google.charts.load('current', {'packages':['corechart', 'controls']});
 
-function CandlestickChart() {
-
-}
+function CandlestickChart() {}
 
 CandlestickChart.prototype.render = function() {
+    var self=this
 
     //Month granularity in seconds will be based off start time, which may cause synchronization issues while streaming
     //monthly candlesticks. It is unlikely that you will stream monthly candlesticks.
@@ -53,7 +52,7 @@ CandlestickChart.prototype.render = function() {
 
     function queryFixed(onComplete) {
         var symbol = getParameterByName('tag') ? getParameterByName('tag') : 'TWTR';
-        var tspan = Number(getParameterByName('tspan') ? getParameterByName('tspan') : '30');
+        var tspan = Number(getParameterByName('tspan') ? getParameterByName('tspan') : '90');
         var today = new Date()
         var endDate = formatDate(today);
         var startDate = formatDate(new Date().setDate(today.getDate()-tspan))
@@ -90,10 +89,22 @@ CandlestickChart.prototype.render = function() {
               legend:'none',
               hAxis: {
                 direction: -1
+              },
+              candlestick:{
+                fallingColor: { strokeWidth: 0, fill: '#a52714', stroke: '#a52714' }, // red
+                risingColor: { strokeWidth: 0, fill: '#0f9d58', stroke: '#0f9d58'  }   // green
+              },
+              chartArea: {
+                width: '90%',
+                height: '90%'
               }
             };
 
+            // options.chartArea.width = '100%';
+
             var chart = new google.visualization.CandlestickChart(document.getElementById('chart'));
+
+            console.log(options)
 
             google.visualization.events.addListener(chart, 'ready',
                 drawHighTurners.bind(chart, data));
@@ -103,12 +114,8 @@ CandlestickChart.prototype.render = function() {
 
             chart.draw(data, options);
 
+            // ==
 
-//     data.addColumn('string', 'Date');
-    // data.addColumn('number', 'Low');
-    // data.addColumn('number', 'Close');
-    // data.addColumn('number', 'Open');
-    // data.addColumn('number', 'High');
             function getLow(x) {
               var sortByLow = data.getSortedRows([{column: 1}]); // sort by low
               var lowest = data.getValue(sortByLow[x], 1)
@@ -309,32 +316,6 @@ CandlestickChart.prototype.render = function() {
 
     queryFixed( function(data) { draw(data, false); });
 
-    /*
-     * Renders the data to the chart; Animation is optional since it really messes up the
-     * sliding action of the chart control.
-     */
-    function draw(data, animate) {
-        //Set up extra chart options.
-        self.chartOpts.title = self.instrument + " Candlesticks";
-        if(animate) {
-            self.chartOpts.animation = { 'duration' : 1000, 'easing' : 'out' };
-        }
-        self.chartOpts.candlestick = {
-          fallingColor: { strokeWidth: 0, fill: '#a52714', stroke: '#a52714' }, // red
-          risingColor: { strokeWidth: 0, fill: '#0f9d58', stroke: '#0f9d58'  }   // green
-        }
-        // self.colors = ['red','#004411']
-        // self.chartOpts.legend = { 'position' : 'none' };
-        //Set up extra control options:
-        // self.controlOpts.ui.minRangeSize = granSecs * 2;
-        //Reset the state of the control so the sliders stay in bounds.
-        // self.control.setState({ 'start' : data.getColumnRange(0).min, 'end' :  data.getColumnRange(0).max});
-
-        self.chart.setOptions(self.chartOpts);
-        // self.control.setOptions(self.controlOpts);
-        self.chart.draw(data);
-    }
-
     var svgContainer = this.svgContainer = d3.select("#overlay")
                           .append("svg")
                           .attr("width", '100%')
@@ -397,15 +378,4 @@ CandlestickChart.prototype.render = function() {
                                   .attr("stroke-opacity", opacity)
 
     }
-};
-
-
-/* 'Static' utility functions
- */
-CandlestickChart.util = {
-    'getDaysInMonth' : function(year, month) {
-        var start = new Date(year, month, 1);
-        var end = new Date(year, parseInt(month, 10) + 1, 1);
-        return (end - start)/(1000 * 60 * 60 * 24);
-    },
 };
