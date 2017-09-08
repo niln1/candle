@@ -4,6 +4,11 @@
 
 google.charts.load('current', {'packages':['corechart', 'controls']});
 
+window.PRAY = 0
+window.DRAY = 0
+
+// todo draw every day, save data every day, then act on change
+
 function CandlestickChart() {}
 
 CandlestickChart.prototype.render = function() {
@@ -71,21 +76,23 @@ CandlestickChart.prototype.render = function() {
             document.forms['yo'].submit();
         });
 
-        $.get('https://query.yahooapis.com/v1/public/yql?q=select%20*%20from%20yahoo.finance.historicaldata%20where%20symbol%20%3D%20%22'
-        +symbol+
-        '%22%20and%20startDate%20%3D%20%22'
-        +startDate+
-        '%22%20and%20endDate%20%3D%20%22'
-        +endDate+
-        '%22%20&format=json&diagnostics=true&env=store%3A%2F%2Fdatatables.org%2Falltableswithkeys&callback=',
+        $.get('https://www.alphavantage.co/query?function=TIME_SERIES_WEEKLY&symbol='+symbol+'&outputsize=compact&apikey=407PI64045EYSF24',
         function(response) {
             console.log(response)
-            var quotes = response.query.results.quote
-            quotes.forEach(function(quote, i) {
-              data.addRow([quote.Date, Number(quote.Low), Number(quote.Close), Number(quote.Open), Number(quote.High)]);
+            var quotes = response['Weekly Time Series']
+            var results = Object.keys(quotes).map(function (key) { return _.merge({}, quotes[key], { key: key }); }).sort(function(a, b) {
+              return new Date(b.key)-new Date(a.key)
+            })
+            var nr = results.slice(0, 100)
+            console.log(nr.length)
+            console.log(nr)
+
+            nr.forEach(function(quote, i) {
+              data.addRow([quote.key, Number(quote['3. low']), Number(quote['4. close']), Number(quote['1. open']), Number(quote['2. high'])]);
             })
 
             var options = {
+              fontSize: 5,
               legend:'none',
               hAxis: {
                 direction: -1
@@ -95,16 +102,12 @@ CandlestickChart.prototype.render = function() {
                 risingColor: { strokeWidth: 0, fill: '#0f9d58', stroke: '#0f9d58'  }   // green
               },
               chartArea: {
-                width: '90%',
+                width: '100%',
                 height: '90%'
               }
             };
 
-            // options.chartArea.width = '100%';
-
             var chart = new google.visualization.CandlestickChart(document.getElementById('chart'));
-
-            console.log(options)
 
             google.visualization.events.addListener(chart, 'ready',
                 drawHighTurners.bind(chart, data));
@@ -173,22 +176,15 @@ CandlestickChart.prototype.render = function() {
                 return getLocation(each, 4)
               })
 
-              // futureFunction(dots, function(first, next) {
-              //   if (first.y < next.y) {
-              //     var getY = getStraightLineFunction(drawDot(first, cli, 'red-dot'), drawDot(next, cli, 'red-dot')).getY
-              //     drawRay(first, getY)
-              //   }
-              // })
-
-              futureFunction(dots, function(first, next) {
+              var fTrend = futureFunction(dots, function(first, next) {
                 if (first.y < next.y) {
                   var dotFirst = drawDot(first, cli, 'red-dot')
                   var dotNext = drawDot(next, cli, 'red-dot')
                   var getY = getStraightLineFunction(dotFirst, dotNext).getY
 
                   var status = checkInbetween(first, next, function(i) {
-                    var dot = drawDot(getLocation(i, 2), cli, '')
-                    if (dot.Y < getY(dot.X)) { // get close price
+                    var dot = drawDot(getLocation(i, 4), cli, '')
+                    if (dot.Y < getY(dot.X)) { // get high price open 3 high 4
                       return true
                     }
                     return false
@@ -196,10 +192,26 @@ CandlestickChart.prototype.render = function() {
 
                   if (status === 'invalid') {
                     drawRay(dotNext, getY, 'black', 0.1)
+                    return null
                   } else if (status === false) {
                     drawRay(dotNext, getY, 'black')
+                    DRAY++
+                    return getY(cli.getXLocation(-1))
                   }
+
+                  return null
                 }
+              })
+
+              var xxx = fTrend.map(function(each) {
+                var dot = {}
+                dot.x = -1
+                dot.y = getDrawedYToRealY(each, cli)
+                var dotD = drawDot(dot, cli, 'red-dot')
+                var chartDiv = document.querySelector('#chart > div > div'); // magic selector :()
+
+                chartDiv.appendChild(dotD);
+                return dot.y
               })
 
               var dotElements = dots.map(function(each) {
@@ -214,13 +226,15 @@ CandlestickChart.prototype.render = function() {
             }
 
             function futureFunction(dots, cb) {
+              var array = []
               for (var i = 0; i< dots.length; i++ ) {
                 for (var j = i + 1; j < dots.length; j++ ) {
                   var first = dots[i]
                   var next = dots[j]
-                  cb(first, next)
+                  array.push(cb(first, next))
                 }
               }
+              return array.filter(function(val) { return val !== null && val !== undefined; })
             }
 
             function checkInbetween(dot1, dot2, cb) {
@@ -245,23 +259,15 @@ CandlestickChart.prototype.render = function() {
                 return getLocation(each, 1)
               })
 
-              // futureFunction(dots, function(first, next) {
-              //   if (first.y > next.y) {
-              //     var dotFirst = drawDot(first, cli, 'green-dot')
-              //     var getY = getStraightLineFunction(drawDot(first, cli, 'green-dot'), drawDot(next, cli, 'green-dot')).getY
-              //     drawRay(first, getY)
-              //   }
-              // })
-
-              futureFunction(dots, function(first, next) {
+              var fTrend = futureFunction(dots, function(first, next) {
                 if (first.y > next.y) {
                   var dotFirst = drawDot(first, cli, 'green-dot')
                   var dotNext = drawDot(next, cli, 'green-dot')
                   var getY = getStraightLineFunction(dotFirst, dotNext).getY
 
                   var status = checkInbetween(first, next, function(i) {
-                    var dot = drawDot(getLocation(i, 2), cli, '')
-                    if (dot.Y > getY(dot.X)) { // get close price
+                    var dot = drawDot(getLocation(i, 1), cli, '')
+                    if (dot.Y > getY(dot.X)) { // get low price low 1 close 2 open 3 high 4
                       return true
                     }
                     return false
@@ -269,12 +275,26 @@ CandlestickChart.prototype.render = function() {
 
                   if (status === 'invalid') {
                     drawRay(dotNext, getY, 'black', 0.1)
+                    return null
                   } else if (status === false) {
                     drawRay(dotNext, getY, 'black')
+                    PRAY++
+                    return getY(cli.getXLocation(-1))
                   }
+                  return null
                 }
               })
 
+              var xxx = fTrend.map(function(each) {
+                var dot = {}
+                dot.x = -1
+                dot.y = getDrawedYToRealY(each, cli)
+                var dotD = drawDot(dot, cli, 'green-dot')
+                var chartDiv = document.querySelector('#chart > div > div'); // magic selector :()
+
+                chartDiv.appendChild(dotD);
+                return dot.y
+              })
               var dotElements = dots.map(function(each) {
                 return drawDot(each, cli, 'green-dot')
               })
@@ -306,6 +326,8 @@ CandlestickChart.prototype.render = function() {
               dot.style.left = X + "px";
               dot.className = className;
 
+              dot.x = d.x;
+              dot.y = d.y;
               dot.X = X;
               dot.Y = Y;
 
@@ -318,7 +340,7 @@ CandlestickChart.prototype.render = function() {
 
     var svgContainer = this.svgContainer = d3.select("#overlay")
                           .append("svg")
-                          .attr("width", '100%')
+                          .attr("width", window.innerWidth)
                           .attr("height", 800)
 
     function drawLine(d1, d2, stroke) {
@@ -349,6 +371,13 @@ CandlestickChart.prototype.render = function() {
         getY: getY,
         geyX: getX
       }
+    }
+
+    function getDrawedYToRealY(y, cli) {
+      var Y0 = cli.getYLocation(0)
+      var Y100 = cli.getYLocation(100)
+      var k = (Y100-Y0)/100
+      return (y-Y0)/k
     }
 
     function drawStraightLine(getY, stroke, opacity) {
